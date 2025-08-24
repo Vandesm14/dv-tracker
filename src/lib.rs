@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use internment::Intern;
-use maud::{PreEscaped, Render, html};
+use maud::{Render, html};
 
 pub struct Station {
   pub short: Intern<String>,
@@ -79,6 +79,7 @@ impl Render for Order {
         td { (self.id.to_string()) }
         (self.from.render())
         (self.to.render())
+        td { button hx-delete={"/api/order/" (self.id.to_string())} hx-target="#orders" {"x"} }
       }
     );
     buffer.push_str(&html.into_string());
