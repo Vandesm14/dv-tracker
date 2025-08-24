@@ -85,7 +85,7 @@ impl Render for Order {
         td { (self.id.to_string()) }
         (self.from.render())
         (self.to.render())
-        td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" {"x"} }
+        td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
       }
     );
     buffer.push_str(&html.into_string());
