@@ -107,8 +107,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(order) =
                   orders.iter_mut().find(|o| o.full_id() == full_id)
                 {
-                  println!("{req:?}");
-
                   if let Some(id) = req.id {
                     order.id = id;
                   }
@@ -134,8 +132,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     order.to.track = to_track;
                   }
                 }
-
-                println!("{orders:?}");
 
                 Html::from(render_orders(&orders, &stations))
               } else {
