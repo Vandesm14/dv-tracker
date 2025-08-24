@@ -52,22 +52,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route(
           "/order/:id",
-          delete(async |State(state): State<AppState>, Path(id): Path<u8>| {
-            if let Ok(mut orders) = state.orders.try_lock() {
-              if let Some(index) = orders
-                .iter()
-                .enumerate()
-                .find(|(_, o)| o.id == id)
-                .map(|(i, _)| i)
-              {
-                orders.remove(index);
-              }
+          delete(
+            async |State(state): State<AppState>, Path(id): Path<String>| {
+              if let Ok(mut orders) = state.orders.try_lock() {
+                if let Some(index) = orders
+                  .iter()
+                  .enumerate()
+                  .find(|(_, o)| o.full_id() == id)
+                  .map(|(i, _)| i)
+                {
+                  orders.remove(index);
+                }
 
-              render_orders(orders)
-            } else {
-              Html::from("Failed to lock orders.".to_string())
-            }
-          }),
+                render_orders(orders)
+              } else {
+                Html::from("Failed to lock orders.".to_string())
+              }
+            },
+          ),
         )
         .route(
           "/orders",

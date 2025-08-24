@@ -60,6 +60,12 @@ pub struct Order {
   pub to: Destination,
 }
 
+impl Order {
+  pub fn full_id(&self) -> String {
+    format!("{}{}", self.kind, self.id)
+  }
+}
+
 impl Default for Order {
   fn default() -> Self {
     Self {
@@ -79,7 +85,7 @@ impl Render for Order {
         td { (self.id.to_string()) }
         (self.from.render())
         (self.to.render())
-        td { button hx-delete={"/api/order/" (self.id.to_string())} hx-target="#orders" {"x"} }
+        td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" {"x"} }
       }
     );
     buffer.push_str(&html.into_string());
