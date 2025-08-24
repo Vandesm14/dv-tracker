@@ -57,6 +57,12 @@ fn render_kind_list(guid: usize, kind: Intern<String>) -> Markup {
   )
 }
 
+fn render_id_input(guid: usize, id: u8) -> Markup {
+  html!(
+    input name="id" type="number" hx-post={"/api/order/" (guid)} hx-target="#orders" value=(id) max="255" min="0";
+  )
+}
+
 fn render_station_list(
   guid: usize,
   destination_kind: DestinationKind,
@@ -202,14 +208,14 @@ impl Order {
       tr {
         form {
           td { (render_kind_list(self.guid, self.kind)) }
-          td { (self.id.to_string()) }
+          td { (render_id_input(self.guid, self.id)) }
           td { (render_station_list(self.guid, DestinationKind::From, stations, &self.from)) }
           td { (render_yard_list(self.guid, DestinationKind::From, stations, &self.from)) }
           td { (render_track_list(self.guid, DestinationKind::From, stations, &self.from)) }
           td { (render_station_list(self.guid, DestinationKind::To, stations, &self.to)) }
           td { (render_yard_list(self.guid, DestinationKind::To, stations, &self.to)) }
           td { (render_track_list(self.guid, DestinationKind::To, stations, &self.to)) }
-          td { button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-confirm="Sure?" {"x"} }
+          td { button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"} }
         }
       }
     );
