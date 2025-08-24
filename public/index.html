@@ -42,7 +42,9 @@
           <th></th>
         </tr>
       </thead>
-      <tbody id="orders" hx-get="/api/orders" hx-trigger="load"></tbody>
+      <tbody id="orders">
+        {{orders}}
+      </tbody>
     </table>
     <button hx-put="/api/order" hx-target="#orders">Add</button>
     <script src="/htmx.min.js"></script>

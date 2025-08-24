@@ -592,6 +592,7 @@ dependencies = [
  "axum",
  "internment",
  "maud",
+ "serde",
  "tokio",
  "tower 0.5.2",
  "tower-http",

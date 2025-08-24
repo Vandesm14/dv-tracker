@@ -26,13 +26,47 @@ impl Station {
   }
 }
 
-pub fn render_station_list(
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+enum SelectKind {
+  Station,
+  Yard,
+  Track,
+}
+
+impl std::fmt::Display for SelectKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      SelectKind::Station => write!(f, "station"),
+      SelectKind::Yard => write!(f, "yard"),
+      SelectKind::Track => write!(f, "track"),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
+enum DestinationKind {
+  From,
+  To,
+}
+
+impl std::fmt::Display for DestinationKind {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      DestinationKind::From => write!(f, "from"),
+      DestinationKind::To => write!(f, "to"),
+    }
+  }
+}
+
+fn render_station_list(
+  id: String,
+  destination_kind: DestinationKind,
   stations: &[Station],
   selected: Intern<String>,
 ) -> PreEscaped<String> {
   let html = html!(
     td {
-      select {
+      select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" value={(selected)} {
         @for station in stations {
           option value=(station.short) selected=(station.short == selected) { (station.short) }
         }
@@ -42,6 +76,7 @@ pub fn render_station_list(
   html
 }
 
+#[derive(Debug)]
 pub struct Destination {
   pub station: Intern<String>,
   pub yard: Intern<String>,
@@ -51,18 +86,30 @@ pub struct Destination {
 impl Default for Destination {
   fn default() -> Self {
     Self {
-      station: Intern::from_ref("SM"),
+      station: Intern::from_ref("HB"),
       yard: Intern::from_ref("A"),
       track: 1,
     }
   }
 }
 
+#[derive(Debug)]
 pub struct Order {
   pub id: u8,
   pub kind: Intern<String>,
   pub from: Destination,
   pub to: Destination,
+}
+
+impl Default for Order {
+  fn default() -> Self {
+    Self {
+      id: Default::default(),
+      kind: Intern::from_ref("FH"),
+      from: Default::default(),
+      to: Default::default(),
+    }
+  }
 }
 
 impl Order {
@@ -76,29 +123,18 @@ impl Order {
         form {
           td { (self.kind.as_ref()) }
           td { (self.id.to_string()) }
-          (render_station_list(stations, self.from.station))
-          td {}
-          td {}
-          (render_station_list(stations, self.to.station))
-          td {}
-          td {}
+          (render_station_list(self.full_id(), DestinationKind::From, stations, self.from.station))
+          td {(self.from.yard)}
+          td {(self.from.track)}
+          (render_station_list(self.full_id(), DestinationKind::To, stations, self.to.station))
+          td {(self.from.yard)}
+          td {(self.from.track)}
           td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
         }
       }
     );
 
     html
-  }
-}
-
-impl Default for Order {
-  fn default() -> Self {
-    Self {
-      id: Default::default(),
-      kind: Intern::from_ref("FH"),
-      from: Default::default(),
-      to: Default::default(),
-    }
   }
 }
 

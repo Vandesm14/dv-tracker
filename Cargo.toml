@@ -7,6 +7,7 @@ edition = "2024"
 axum = "0.6"
 internment = "0.8"
 maud = "0.27"
+serde = { version = "1.0.219", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tower = "0.5"
 tower-http = { version = "0.4", features = ["cors", "fs"] }
