@@ -1,0 +1,15 @@
+# Node
+node_modules/
+client-web/dist/
+
+# Environment
+.env
+mprocs.log
+
+# Build
+dist/
+target/
+client-web/bindings
+
+# Personal
+database.db
