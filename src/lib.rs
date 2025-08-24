@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use internment::Intern;
-use maud::{PreEscaped, html};
+use maud::{Markup, html};
 
 pub struct Station {
   pub short: Intern<String>,
@@ -63,17 +63,20 @@ fn render_station_list(
   destination_kind: DestinationKind,
   stations: &[Station],
   selected: Intern<String>,
-) -> PreEscaped<String> {
-  let html = html!(
+) -> Markup {
+  html!(
     td {
-      select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" value={(selected)} {
+      select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" {
         @for station in stations {
-          option value=(station.short) selected=(station.short == selected) { (station.short) }
+          @if station.short == selected {
+            option value=(station.short) selected { (station.short) }
+          } @else {
+            option value=(station.short) { (station.short) }
+          }
         }
       }
     }
-  );
-  html
+  )
 }
 
 #[derive(Debug)]
@@ -93,8 +96,19 @@ impl Default for Destination {
   }
 }
 
+impl Destination {
+  pub fn new(station: Intern<String>, yard: Intern<String>, track: u8) -> Self {
+    Self {
+      station,
+      yard,
+      track,
+    }
+  }
+}
+
 #[derive(Debug)]
 pub struct Order {
+  pub guid: usize,
   pub id: u8,
   pub kind: Intern<String>,
   pub from: Destination,
@@ -104,6 +118,7 @@ pub struct Order {
 impl Default for Order {
   fn default() -> Self {
     Self {
+      guid: 0,
       id: Default::default(),
       kind: Intern::from_ref("FH"),
       from: Default::default(),
@@ -113,11 +128,27 @@ impl Default for Order {
 }
 
 impl Order {
+  pub fn new(
+    guid: usize,
+    id: u8,
+    kind: Intern<String>,
+    from: Destination,
+    to: Destination,
+  ) -> Self {
+    Self {
+      guid,
+      id,
+      kind,
+      from,
+      to,
+    }
+  }
+
   pub fn full_id(&self) -> String {
     format!("{}{}", self.kind, self.id)
   }
 
-  pub fn render(&self, stations: &[Station]) -> PreEscaped<String> {
+  pub fn render(&self, stations: &[Station]) -> Markup {
     let html = html!(
       tr {
         form {
