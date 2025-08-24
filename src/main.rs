@@ -7,7 +7,6 @@ use axum::{
   routing::{delete, get, put},
 };
 use internment::Intern;
-use maud::html;
 use serde::Deserialize;
 use server::{Order, Station, get_stations};
 use tower_http::{cors::CorsLayer, services::ServeDir};
@@ -25,22 +24,50 @@ struct OrderRequest {
   to_track: Option<u8>,
 }
 
+struct OrderStore {
+  idx: usize,
+  orders: Vec<Order>,
+}
+
+impl OrderStore {
+  fn new() -> Self {
+    Self {
+      idx: 0,
+      orders: Vec::new(),
+    }
+  }
+
+  fn add(&mut self, mut order: Order) {
+    order.guid = self.idx;
+    self.orders.push(order);
+    self.idx += 1;
+  }
+
+  fn remove(&mut self, guid: usize) {
+    if let Some(pos) = self.orders.iter().position(|o| o.guid == guid) {
+      self.orders.remove(pos);
+    }
+  }
+
+  fn get_mut(&mut self, guid: usize) -> Option<&mut Order> {
+    self.orders.iter_mut().find(|o| o.guid == guid)
+  }
+
+  fn orders(&self) -> &[Order] {
+    &self.orders
+  }
+}
+
 #[derive(Clone)]
 struct AppState {
-  orders: Arc<Mutex<Vec<Order>>>,
+  store: Arc<Mutex<OrderStore>>,
   stations: Vec<Station>,
 }
 
 impl AppState {
-  pub fn new() -> Self {
+  fn new() -> Self {
     Self {
-      orders: Arc::new(Mutex::new(vec![
-        Order::default(),
-        Order {
-          id: 1,
-          ..Default::default()
-        },
-      ])),
+      store: Arc::new(Mutex::new(OrderStore::new())),
       stations: get_stations(),
     }
   }
@@ -64,30 +91,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
           "/order",
           put(async |State(state): State<AppState>| {
-            if let Ok(mut orders) = state.orders.try_lock() {
-              orders.push(Order::default());
-              Html::from(render_orders(&orders, &state.stations))
+            if let Ok(mut store) = state.store.try_lock() {
+              store.add(Order::default());
+              Html::from(render_orders(store.orders(), &state.stations))
             } else {
               Html::from("Failed to lock orders.".to_string())
             }
           }),
         )
         .route(
-          "/order/:full_id",
+          "/order/:guid",
           delete(
-            async |State(state): State<AppState>,
-                   Path(full_id): Path<String>| {
-              if let Ok(mut orders) = state.orders.try_lock() {
-                if let Some(index) = orders
-                  .iter()
-                  .enumerate()
-                  .find(|(_, o)| o.full_id() == full_id)
-                  .map(|(i, _)| i)
-                {
-                  orders.remove(index);
-                }
+            async |State(state): State<AppState>, Path(guid): Path<usize>| {
+              if let Ok(mut store) = state.store.try_lock() {
+                store.remove(guid);
 
-                Html::from(render_orders(&orders, &state.stations))
+                Html::from(render_orders(store.orders(), &state.stations))
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -95,12 +114,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           )
           .post(
             async |State(state): State<AppState>,
-                   Path(full_id): Path<String>,
+                   Path(guid): Path<usize>,
                    Form(req): Form<OrderRequest>| {
-              if let Ok(mut orders) = state.orders.try_lock() {
-                if let Some(order) =
-                  orders.iter_mut().find(|o| o.full_id() == full_id)
-                {
+              if let Ok(mut store) = state.store.try_lock() {
+                if let Some(order) = store.get_mut(guid) {
                   if let Some(id) = req.id {
                     order.id = id;
                   }
@@ -129,46 +146,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   order.make_valid(&state.stations);
                 }
 
-                Html::from(render_orders(&orders, &state.stations))
+                Html::from(render_orders(store.orders(), &state.stations))
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
             },
           ),
-        )
-        .route(
-          "/orders",
-          get(async |State(state): State<AppState>| {
-            if let Ok(orders) = state.orders.try_lock() {
-              Html::from(render_orders(&orders, &state.stations))
-            } else {
-              Html::from("Failed to lock orders.".to_string())
-            }
-          }),
-        )
-        .route(
-          "/stations",
-          get(async |State(state): State<AppState>| {
-            Html::from(
-              state
-                .stations
-                .iter()
-                .map(|s| s.short)
-                .fold(String::new(), |acc, k| {
-                  acc + &html!(option value=(k) { (k) }).into_string()
-                }),
-            )
-          }),
         ),
     )
     .route(
       "/",
       get(async |State(state): State<AppState>| {
         if let Ok(html) = std::fs::read_to_string("./public/index.html") {
-          if let Ok(orders) = state.orders.try_lock() {
+          if let Ok(store) = state.store.try_lock() {
             Html::from(html.replace(
               "{{orders}}",
-              render_orders(&orders, &state.stations).as_str(),
+              render_orders(store.orders(), &state.stations).as_str(),
             ))
           } else {
             Html::from("Failed to lock orders.".to_string())

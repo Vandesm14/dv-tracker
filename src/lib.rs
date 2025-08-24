@@ -43,14 +43,28 @@ impl std::fmt::Display for DestinationKind {
   }
 }
 
+fn render_kind_list(guid: usize, kind: Intern<String>) -> Markup {
+  html!(
+    select name="kind" hx-post={"/api/order/" (guid)} hx-target="#orders" {
+      @for k in ["FH", "LH", "SU"] {
+        @if Intern::from_ref(k) == kind {
+          option value=(k) selected { (k) }
+        } @else {
+          option value=(k) { (k) }
+        }
+      }
+    }
+  )
+}
+
 fn render_station_list(
-  id: String,
+  guid: usize,
   destination_kind: DestinationKind,
   stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
-    select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+    select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
       @for s in stations {
         @if s.short == from.station {
           option value=(s.short) selected { (s.short) }
@@ -63,13 +77,13 @@ fn render_station_list(
 }
 
 fn render_yard_list(
-  id: String,
+  guid: usize,
   destination_kind: DestinationKind,
   stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
-    select name={(destination_kind.to_string()) "-yard"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+    select name={(destination_kind.to_string()) "-yard"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
       @for y in stations.iter().find(|s| s.short == from.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
         @if *y == from.yard {
           option value=(y) selected { (y) }
@@ -82,13 +96,13 @@ fn render_yard_list(
 }
 
 fn render_track_list(
-  id: String,
+  guid: usize,
   destination_kind: DestinationKind,
   stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
-    select name={(destination_kind.to_string()) "-track"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+    select name={(destination_kind.to_string()) "-track"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
       @for t in stations.iter().find(|s| s.short == from.station).and_then(|s| s.tracks.get(&from.yard)).unwrap_or(&vec![]).iter() {
         @if *t == from.track {
           option value=(t) selected { (t) }
@@ -133,13 +147,13 @@ impl Destination {
           self.track = *yard.first().unwrap();
         }
       } else {
-        self.yard = *station.tracks.keys().next().unwrap();
+        self.yard = *station.tracks.keys().sorted().next().unwrap();
         self.track = *station.tracks.get(&self.yard).unwrap().first().unwrap();
       }
     } else {
       let first = stations.first().unwrap();
       self.station = first.short;
-      self.yard = *first.tracks.keys().next().unwrap();
+      self.yard = *first.tracks.keys().sorted().next().unwrap();
       self.track = *first.tracks.get(&self.yard).unwrap().first().unwrap();
     }
   }
@@ -183,23 +197,19 @@ impl Order {
     }
   }
 
-  pub fn full_id(&self) -> String {
-    format!("{}{}", self.kind, self.id)
-  }
-
   pub fn render(&self, stations: &[Station]) -> Markup {
     let html = html!(
       tr {
         form {
-          td { (self.kind.as_ref()) }
+          td { (render_kind_list(self.guid, self.kind)) }
           td { (self.id.to_string()) }
-          td { (render_station_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
-          td { (render_yard_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
-          td { (render_track_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
-          td { (render_station_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
-          td { (render_yard_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
-          td { (render_track_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
-          td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
+          td { (render_station_list(self.guid, DestinationKind::From, stations, &self.from)) }
+          td { (render_yard_list(self.guid, DestinationKind::From, stations, &self.from)) }
+          td { (render_track_list(self.guid, DestinationKind::From, stations, &self.from)) }
+          td { (render_station_list(self.guid, DestinationKind::To, stations, &self.to)) }
+          td { (render_yard_list(self.guid, DestinationKind::To, stations, &self.to)) }
+          td { (render_track_list(self.guid, DestinationKind::To, stations, &self.to)) }
+          td { button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-confirm="Sure?" {"x"} }
         }
       }
     );
