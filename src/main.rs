@@ -125,6 +125,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   if let Some(to_track) = req.to_track {
                     order.to.track = to_track;
                   }
+
+                  order.make_valid(&state.stations);
                 }
 
                 Html::from(render_orders(&orders, &state.stations))

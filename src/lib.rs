@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use internment::Intern;
+use itertools::Itertools;
 use maud::{Markup, html};
 
 #[derive(Debug, Clone)]
@@ -28,23 +29,6 @@ impl Station {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash)]
-enum SelectKind {
-  Station,
-  Yard,
-  Track,
-}
-
-impl std::fmt::Display for SelectKind {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      SelectKind::Station => write!(f, "station"),
-      SelectKind::Yard => write!(f, "yard"),
-      SelectKind::Track => write!(f, "track"),
-    }
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 enum DestinationKind {
   From,
   To,
@@ -63,17 +47,53 @@ fn render_station_list(
   id: String,
   destination_kind: DestinationKind,
   stations: &[Station],
-  selected: Intern<String>,
+  from: &Destination,
 ) -> Markup {
   html!(
-    td {
-      select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" {
-        @for station in stations {
-          @if station.short == selected {
-            option value=(station.short) selected { (station.short) }
-          } @else {
-            option value=(station.short) { (station.short) }
-          }
+    select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+      @for s in stations {
+        @if s.short == from.station {
+          option value=(s.short) selected { (s.short) }
+        } @else {
+          option value=(s.short) { (s.short) }
+        }
+      }
+    }
+  )
+}
+
+fn render_yard_list(
+  id: String,
+  destination_kind: DestinationKind,
+  stations: &[Station],
+  from: &Destination,
+) -> Markup {
+  html!(
+    select name={(destination_kind.to_string()) "-yard"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+      @for y in stations.iter().find(|s| s.short == from.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
+        @if *y == from.yard {
+          option value=(y) selected { (y) }
+        } @else {
+          option value=(y) { (y) }
+        }
+      }
+    }
+  )
+}
+
+fn render_track_list(
+  id: String,
+  destination_kind: DestinationKind,
+  stations: &[Station],
+  from: &Destination,
+) -> Markup {
+  html!(
+    select name={(destination_kind.to_string()) "-track"} hx-post={"/api/order/" (id)} hx-target="#orders" {
+      @for t in stations.iter().find(|s| s.short == from.station).and_then(|s| s.tracks.get(&from.yard)).unwrap_or(&vec![]).iter() {
+        @if *t == from.track {
+          option value=(t) selected { (t) }
+        } @else {
+          option value=(t) { (t) }
         }
       }
     }
@@ -90,7 +110,7 @@ pub struct Destination {
 impl Default for Destination {
   fn default() -> Self {
     Self {
-      station: Intern::from_ref("HB"),
+      station: Intern::from_ref("SM"),
       yard: Intern::from_ref("A"),
       track: 1,
     }
@@ -103,6 +123,24 @@ impl Destination {
       station,
       yard,
       track,
+    }
+  }
+
+  pub fn make_valid(&mut self, stations: &[Station]) {
+    if let Some(station) = stations.iter().find(|s| s.short == self.station) {
+      if let Some(yard) = station.tracks.get(&self.yard) {
+        if !yard.contains(&self.track) {
+          self.track = *yard.first().unwrap();
+        }
+      } else {
+        self.yard = *station.tracks.keys().next().unwrap();
+        self.track = *station.tracks.get(&self.yard).unwrap().first().unwrap();
+      }
+    } else {
+      let first = stations.first().unwrap();
+      self.station = first.short;
+      self.yard = *first.tracks.keys().next().unwrap();
+      self.track = *first.tracks.get(&self.yard).unwrap().first().unwrap();
     }
   }
 }
@@ -155,18 +193,23 @@ impl Order {
         form {
           td { (self.kind.as_ref()) }
           td { (self.id.to_string()) }
-          (render_station_list(self.full_id(), DestinationKind::From, stations, self.from.station))
-          td {(self.from.yard)}
-          td {(self.from.track)}
-          (render_station_list(self.full_id(), DestinationKind::To, stations, self.to.station))
-          td {(self.from.yard)}
-          td {(self.from.track)}
+          td { (render_station_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
+          td { (render_yard_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
+          td { (render_track_list(self.full_id(), DestinationKind::From, stations, &self.from)) }
+          td { (render_station_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
+          td { (render_yard_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
+          td { (render_track_list(self.full_id(), DestinationKind::To, stations, &self.to)) }
           td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
         }
       }
     );
 
     html
+  }
+
+  pub fn make_valid(&mut self, stations: &[Station]) {
+    self.from.make_valid(stations);
+    self.to.make_valid(stations);
   }
 }
 
