@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use internment::Intern;
-use maud::{Render, html};
+use maud::{PreEscaped, html};
 
 pub struct Station {
   pub short: Intern<String>,
@@ -26,6 +26,22 @@ impl Station {
   }
 }
 
+pub fn render_station_list(
+  stations: &[Station],
+  selected: Intern<String>,
+) -> PreEscaped<String> {
+  let html = html!(
+    td {
+      select {
+        @for station in stations {
+          option value=(station.short) selected=(station.short == selected) { (station.short) }
+        }
+      }
+    }
+  );
+  html
+}
+
 pub struct Destination {
   pub station: Intern<String>,
   pub yard: Intern<String>,
@@ -42,17 +58,6 @@ impl Default for Destination {
   }
 }
 
-impl Render for Destination {
-  fn render_to(&self, buffer: &mut String) {
-    let html = html!(
-      td { (self.station.to_string()) }
-      td { (self.yard.to_string()) }
-      td { (self.track) }
-    );
-    buffer.push_str(&html.into_string());
-  }
-}
-
 pub struct Order {
   pub id: u8,
   pub kind: Intern<String>,
@@ -64,6 +69,26 @@ impl Order {
   pub fn full_id(&self) -> String {
     format!("{}{}", self.kind, self.id)
   }
+
+  pub fn render(&self, stations: &[Station]) -> PreEscaped<String> {
+    let html = html!(
+      tr {
+        form {
+          td { (self.kind.as_ref()) }
+          td { (self.id.to_string()) }
+          (render_station_list(stations, self.from.station))
+          td {}
+          td {}
+          (render_station_list(stations, self.to.station))
+          td {}
+          td {}
+          td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
+        }
+      }
+    );
+
+    html
+  }
 }
 
 impl Default for Order {
@@ -74,21 +99,6 @@ impl Default for Order {
       from: Default::default(),
       to: Default::default(),
     }
-  }
-}
-
-impl Render for Order {
-  fn render_to(&self, buffer: &mut String) {
-    let html = html!(
-      tr {
-        td { (self.kind.as_ref()) }
-        td { (self.id.to_string()) }
-        (self.from.render())
-        (self.to.render())
-        td { button hx-delete={"/api/order/" (self.full_id())} hx-target="#orders" hx-confirm="Sure?" {"x"} }
-      }
-    );
-    buffer.push_str(&html.into_string());
   }
 }
 
