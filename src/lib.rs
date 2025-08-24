@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use internment::Intern;
 use maud::{Markup, html};
 
+#[derive(Debug, Clone)]
 pub struct Station {
   pub short: Intern<String>,
   pub long: Intern<String>,

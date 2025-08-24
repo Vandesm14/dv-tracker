@@ -28,7 +28,7 @@ struct OrderRequest {
 #[derive(Clone)]
 struct AppState {
   orders: Arc<Mutex<Vec<Order>>>,
-  stations: Arc<Mutex<Vec<Station>>>,
+  stations: Vec<Station>,
 }
 
 impl AppState {
@@ -41,7 +41,7 @@ impl AppState {
           ..Default::default()
         },
       ])),
-      stations: Arc::new(Mutex::new(get_stations())),
+      stations: get_stations(),
     }
   }
 }
@@ -64,11 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
           "/order",
           put(async |State(state): State<AppState>| {
-            if let (Ok(mut orders), Ok(stations)) =
-              (state.orders.try_lock(), state.stations.try_lock())
-            {
+            if let Ok(mut orders) = state.orders.try_lock() {
               orders.push(Order::default());
-              Html::from(render_orders(&orders, &stations))
+              Html::from(render_orders(&orders, &state.stations))
             } else {
               Html::from("Failed to lock orders.".to_string())
             }
@@ -79,9 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           delete(
             async |State(state): State<AppState>,
                    Path(full_id): Path<String>| {
-              if let (Ok(mut orders), Ok(stations)) =
-                (state.orders.try_lock(), state.stations.try_lock())
-              {
+              if let Ok(mut orders) = state.orders.try_lock() {
                 if let Some(index) = orders
                   .iter()
                   .enumerate()
@@ -91,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   orders.remove(index);
                 }
 
-                Html::from(render_orders(&orders, &stations))
+                Html::from(render_orders(&orders, &state.stations))
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -101,9 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             async |State(state): State<AppState>,
                    Path(full_id): Path<String>,
                    Form(req): Form<OrderRequest>| {
-              if let (Ok(mut orders), Ok(stations)) =
-                (state.orders.try_lock(), state.stations.try_lock())
-              {
+              if let Ok(mut orders) = state.orders.try_lock() {
                 if let Some(order) =
                   orders.iter_mut().find(|o| o.full_id() == full_id)
                 {
@@ -133,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
                 }
 
-                Html::from(render_orders(&orders, &stations))
+                Html::from(render_orders(&orders, &state.stations))
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -143,10 +137,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
           "/orders",
           get(async |State(state): State<AppState>| {
-            if let (Ok(orders), Ok(stations)) =
-              (state.orders.try_lock(), state.stations.try_lock())
-            {
-              Html::from(render_orders(&orders, &stations))
+            if let Ok(orders) = state.orders.try_lock() {
+              Html::from(render_orders(&orders, &state.stations))
             } else {
               Html::from("Failed to lock orders.".to_string())
             }
@@ -155,18 +147,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route(
           "/stations",
           get(async |State(state): State<AppState>| {
-            if let Ok(stations) = state.stations.try_lock() {
-              Html::from(
-                stations
-                  .iter()
-                  .map(|s| s.short)
-                  .fold(String::new(), |acc, k| {
-                    acc + &html!(option value=(k) { (k) }).into_string()
-                  }),
-              )
-            } else {
-              Html::from("Failed to lock stations.".to_string())
-            }
+            Html::from(
+              state
+                .stations
+                .iter()
+                .map(|s| s.short)
+                .fold(String::new(), |acc, k| {
+                  acc + &html!(option value=(k) { (k) }).into_string()
+                }),
+            )
           }),
         ),
     )
@@ -174,12 +163,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       "/",
       get(async |State(state): State<AppState>| {
         if let Ok(html) = std::fs::read_to_string("./public/index.html") {
-          if let (Ok(orders), Ok(stations)) =
-            (state.orders.try_lock(), state.stations.try_lock())
-          {
+          if let Ok(orders) = state.orders.try_lock() {
             Html::from(html.replace(
               "{{orders}}",
-              render_orders(&orders, &stations).as_str(),
+              render_orders(&orders, &state.stations).as_str(),
             ))
           } else {
             Html::from("Failed to lock orders.".to_string())
