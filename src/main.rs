@@ -15,12 +15,12 @@ use tower_http::{cors::CorsLayer, services::ServeDir};
 #[serde(rename_all = "kebab-case")]
 struct OrderRequest {
   id: Option<u8>,
-  kind: Option<String>,
-  from_station: Option<String>,
-  from_yard: Option<String>,
+  kind: Option<Intern<String>>,
+  from_station: Option<Intern<String>>,
+  from_yard: Option<Intern<String>>,
   from_track: Option<u8>,
-  to_station: Option<String>,
-  to_yard: Option<String>,
+  to_station: Option<Intern<String>>,
+  to_yard: Option<Intern<String>>,
   to_track: Option<u8>,
 }
 
@@ -105,7 +105,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             async |State(state): State<AppState>, Path(guid): Path<usize>| {
               if let Ok(mut store) = state.store.try_lock() {
                 store.remove(guid);
-
                 Html::from(render_orders(store.orders(), &state.stations))
               } else {
                 Html::from("Failed to lock orders.".to_string())
@@ -122,25 +121,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     order.id = id;
                   }
                   if let Some(kind) = req.kind {
-                    order.kind = Intern::from(kind);
+                    order.kind = kind;
                   }
-                  if let Some(from_station) = req.from_station {
-                    order.from.station = Intern::from(from_station);
+                  if let Some(station) = req.from_station {
+                    order.from.station = station;
                   }
-                  if let Some(from_yard) = req.from_yard {
-                    order.from.yard = Intern::from(from_yard);
+                  if let Some(yard) = req.from_yard {
+                    order.from.yard = yard;
                   }
-                  if let Some(from_track) = req.from_track {
-                    order.from.track = from_track;
+                  if let Some(track) = req.from_track {
+                    order.from.track = track;
                   }
-                  if let Some(to_station) = req.to_station {
-                    order.to.station = Intern::from(to_station);
+                  if let Some(station) = req.to_station {
+                    order.to.station = station;
                   }
-                  if let Some(to_yard) = req.to_yard {
-                    order.to.yard = Intern::from(to_yard);
+                  if let Some(yard) = req.to_yard {
+                    order.to.yard = yard;
                   }
-                  if let Some(to_track) = req.to_track {
-                    order.to.track = to_track;
+                  if let Some(track) = req.to_track {
+                    order.to.track = track;
                   }
 
                   order.make_valid(&state.stations);
