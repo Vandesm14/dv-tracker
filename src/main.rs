@@ -7,10 +7,24 @@ use axum::{
   response::Html,
   routing::{delete, get, post, put},
 };
+use clap::Parser;
 use internment::Intern;
 use serde::Deserialize;
 use server::{Order, Station, get_stations};
 use tower_http::{cors::CorsLayer, services::ServeDir};
+
+/// DV Tracker Server
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Host address to bind to
+    #[arg(long, default_value = "127.0.0.1")]
+    host: String,
+
+    /// Port to bind to
+    #[arg(short, long, default_value_t = 3000)]
+    port: u16,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -84,6 +98,7 @@ fn render_orders(orders: &[Order], stations: &[Station]) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let args = Args::parse();
   let app = Router::new()
     .nest(
       "/api",
@@ -224,7 +239,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .fallback_service(ServeDir::new("./public"))
     .with_state(AppState::new());
 
-  let addr = "127.0.0.1:3000";
+  let addr = format!("{}:{}", args.host, args.port);
   println!("Starting server on http://{addr}");
 
   axum::Server::bind(&addr.parse()?)

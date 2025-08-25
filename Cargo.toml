@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = "0.6"
+clap = { version = "4.0", features = ["derive"] }
 internment = { version = "0.8", features = ["serde"] }
 itertools = "0.14.0"
 maud = "0.27"
