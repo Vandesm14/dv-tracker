@@ -39,6 +39,8 @@ struct OrderRequest {
   to_yard: Option<Intern<String>>,
   to_track: Option<u8>,
   notes: Option<String>,
+  tonnes: Option<u16>,
+  cars: Option<u16>,
 }
 
 struct OrderStore {
@@ -159,6 +161,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
                   if let Some(notes) = req.notes {
                     order.notes = notes;
+                  }
+                  if let Some(tonnes) = req.tonnes {
+                    order.tonnes = tonnes;
+                  }
+                  if let Some(cars) = req.cars {
+                    order.cars = cars;
                   }
 
                   order.make_valid(STATIONS.as_ref());

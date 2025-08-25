@@ -173,6 +173,8 @@ pub struct Order {
   pub from: Destination,
   pub to: Destination,
   pub notes: String,
+  pub tonnes: u16,
+  pub cars: u16,
 }
 
 impl Default for Order {
@@ -184,29 +186,13 @@ impl Default for Order {
       from: Default::default(),
       to: Default::default(),
       notes: Default::default(),
+      tonnes: Default::default(),
+      cars: Default::default(),
     }
   }
 }
 
 impl Order {
-  pub fn new(
-    guid: usize,
-    id: u8,
-    kind: Intern<String>,
-    from: Destination,
-    to: Destination,
-    notes: String,
-  ) -> Self {
-    Self {
-      guid,
-      id,
-      kind,
-      from,
-      to,
-      notes,
-    }
-  }
-
   pub fn render(&self, stations: &[Station]) -> Markup {
     html!(
       tr {
@@ -226,6 +212,12 @@ impl Order {
         }
         td {
           textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
+        }
+        td {
+          input name="tonnes" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.tonnes) min="0";
+        }
+        td {
+          input name="cars" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.cars) min="0";
         }
         td {
           button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
