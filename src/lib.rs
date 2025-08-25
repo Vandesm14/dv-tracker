@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::LazyLock};
 
 use internment::Intern;
 use itertools::Itertools;
@@ -172,6 +172,9 @@ pub struct Order {
   pub kind: Intern<String>,
   pub from: Destination,
   pub to: Destination,
+  pub notes: String,
+  pub tonnes: u16,
+  pub cars: u16,
 }
 
 impl Default for Order {
@@ -182,53 +185,47 @@ impl Default for Order {
       kind: Intern::from_ref("FH"),
       from: Default::default(),
       to: Default::default(),
+      notes: Default::default(),
+      tonnes: Default::default(),
+      cars: Default::default(),
     }
   }
 }
 
 impl Order {
-  pub fn new(
-    guid: usize,
-    id: u8,
-    kind: Intern<String>,
-    from: Destination,
-    to: Destination,
-  ) -> Self {
-    Self {
-      guid,
-      id,
-      kind,
-      from,
-      to,
-    }
-  }
-
   pub fn render(&self, stations: &[Station]) -> Markup {
     html!(
       tr {
-        form {
-          td class={"id " (self.kind)} {
-            (render_kind_list(self.guid, self.kind))
-            (render_id_input(self.guid, self.id))
+        td class={"id " (self.kind)} {
+          (render_kind_list(self.guid, self.kind))
+          (render_id_input(self.guid, self.id))
+        }
+        td class={"dest " (self.from.station)} {
+          (render_station_list(self.guid, DestinationKind::From, stations, &self.from))
+          (render_yard_list(self.guid, DestinationKind::From, stations, &self.from))
+          (render_track_list(self.guid, DestinationKind::From, stations, &self.from))
+        }
+        td class={"dest " (self.to.station)} {
+          (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
+          (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
+          (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
+        }
+        td {
+          textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
+        }
+        td {
+          input name="tonnes" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.tonnes) min="0";
+        }
+        td {
+          input name="cars" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.cars) min="0";
+        }
+        td {
+          button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
+          button hx-post={"/api/order/" (self.guid) "/move/up"} hx-target="#orders" hx-trigger="click" {
+            {"↑"}
           }
-          td class={"dest " (self.from.station)} {
-            (render_station_list(self.guid, DestinationKind::From, stations, &self.from))
-            (render_yard_list(self.guid, DestinationKind::From, stations, &self.from))
-            (render_track_list(self.guid, DestinationKind::From, stations, &self.from))
-          }
-          td class={"dest " (self.to.station)} {
-            (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
-            (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
-            (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
-          }
-          td {
-            button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
-            button hx-post={"/api/order/" (self.guid) "/move/up"} hx-target="#orders" hx-trigger="click" {
-              {"↑"}
-            }
-            button hx-post={"/api/order/" (self.guid) "/move/down"} hx-target="#orders" hx-trigger="click" {
-              {"↓"}
-            }
+          button hx-post={"/api/order/" (self.guid) "/move/down"} hx-target="#orders" hx-trigger="click" {
+            {"↓"}
           }
         }
       }
@@ -241,7 +238,7 @@ impl Order {
   }
 }
 
-pub fn get_stations() -> Vec<Station> {
+pub static STATIONS: LazyLock<Vec<Station>> = LazyLock::new(|| {
   vec![
     Station::new(
       "CME",
@@ -380,4 +377,4 @@ pub fn get_stations() -> Vec<Station> {
       HashMap::from([("B", vec![1, 3, 4]), ("C", vec![1, 3, 4])]),
     ),
   ]
-}
+});
