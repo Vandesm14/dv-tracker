@@ -172,6 +172,7 @@ pub struct Order {
   pub kind: Intern<String>,
   pub from: Destination,
   pub to: Destination,
+  pub notes: String,
 }
 
 impl Default for Order {
@@ -182,6 +183,7 @@ impl Default for Order {
       kind: Intern::from_ref("FH"),
       from: Default::default(),
       to: Default::default(),
+      notes: Default::default(),
     }
   }
 }
@@ -193,6 +195,7 @@ impl Order {
     kind: Intern<String>,
     from: Destination,
     to: Destination,
+    notes: String,
   ) -> Self {
     Self {
       guid,
@@ -200,6 +203,7 @@ impl Order {
       kind,
       from,
       to,
+      notes,
     }
   }
 
@@ -219,6 +223,9 @@ impl Order {
           (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
           (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
           (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
+        }
+        td {
+          textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
         }
         td {
           button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
