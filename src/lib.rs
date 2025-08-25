@@ -204,23 +204,27 @@ impl Order {
   }
 
   pub fn render(&self, stations: &[Station]) -> Markup {
-    let html = html!(
+    html!(
       tr {
         form {
-          td { (render_kind_list(self.guid, self.kind)) }
-          td { (render_id_input(self.guid, self.id)) }
-          td { (render_station_list(self.guid, DestinationKind::From, stations, &self.from)) }
-          td { (render_yard_list(self.guid, DestinationKind::From, stations, &self.from)) }
-          td { (render_track_list(self.guid, DestinationKind::From, stations, &self.from)) }
-          td { (render_station_list(self.guid, DestinationKind::To, stations, &self.to)) }
-          td { (render_yard_list(self.guid, DestinationKind::To, stations, &self.to)) }
-          td { (render_track_list(self.guid, DestinationKind::To, stations, &self.to)) }
+          td {
+            (render_kind_list(self.guid, self.kind))
+            (render_id_input(self.guid, self.id))
+          }
+          td {
+            (render_station_list(self.guid, DestinationKind::From, stations, &self.from))
+            (render_yard_list(self.guid, DestinationKind::From, stations, &self.from))
+            (render_track_list(self.guid, DestinationKind::From, stations, &self.from))
+          }
+          td {
+            (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
+            (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
+            (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
+          }
           td { button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"} }
         }
       }
-    );
-
-    html
+    )
   }
 
   pub fn make_valid(&mut self, stations: &[Station]) {
