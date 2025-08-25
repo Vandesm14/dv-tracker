@@ -29,15 +29,33 @@ struct Args {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+enum Bool {
+  True,
+  False,
+}
+
+impl Bool {
+  fn checked(&self) -> bool {
+    match self {
+      Bool::True => true,
+      Bool::False => false,
+    }
+  }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct OrderRequest {
   id: Option<u8>,
   kind: Option<Intern<String>>,
   from_station: Option<Intern<String>>,
   from_yard: Option<Intern<String>>,
   from_track: Option<u8>,
+  from_done: Option<Bool>,
   to_station: Option<Intern<String>>,
   to_yard: Option<Intern<String>>,
   to_track: Option<u8>,
+  to_done: Option<Bool>,
   notes: Option<String>,
   tonnes: Option<u16>,
   cars: Option<u16>,
@@ -150,6 +168,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   if let Some(track) = req.from_track {
                     order.from.track = track;
                   }
+                  if let Some(done) = req.from_done {
+                    order.from.done = done.checked();
+                  }
                   if let Some(station) = req.to_station {
                     order.to.station = station;
                   }
@@ -158,6 +179,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
                   if let Some(track) = req.to_track {
                     order.to.track = track;
+                  }
+                  if let Some(done) = req.to_done {
+                    order.to.done = done.checked();
                   }
                   if let Some(notes) = req.notes {
                     order.notes = notes;

@@ -122,6 +122,7 @@ pub struct Destination {
   pub station: Intern<String>,
   pub yard: Intern<String>,
   pub track: u8,
+  pub done: bool,
 }
 
 impl Default for Destination {
@@ -130,19 +131,12 @@ impl Default for Destination {
       station: Intern::from_ref("SM"),
       yard: Intern::from_ref("A"),
       track: 1,
+      done: false,
     }
   }
 }
 
 impl Destination {
-  pub fn new(station: Intern<String>, yard: Intern<String>, track: u8) -> Self {
-    Self {
-      station,
-      yard,
-      track,
-    }
-  }
-
   pub fn make_valid(&mut self) {
     if let Some(station) = STATIONS.iter().find(|s| s.short == self.station) {
       if let Some(yard) = station.tracks.get(&self.yard) {
@@ -159,6 +153,13 @@ impl Destination {
       self.yard = *first.tracks.keys().sorted().next().unwrap();
       self.track = *first.tracks.get(&self.yard).unwrap().first().unwrap();
     }
+  }
+}
+
+fn bool_to_option(b: bool) -> Option<bool> {
+  match b {
+    true => Some(true),
+    false => None,
   }
 }
 
@@ -201,11 +202,13 @@ impl Order {
           (render_station_list(self.guid, DestinationKind::From, &self.from))
           (render_yard_list(self.guid, DestinationKind::From, &self.from))
           (render_track_list(self.guid, DestinationKind::From, &self.from))
+          input name="from-done" type="checkbox" checked=[bool_to_option(self.from.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'from-done':this.checked}";
         }
         td class={"dest " (self.to.station)} {
           (render_station_list(self.guid, DestinationKind::To, &self.to))
           (render_yard_list(self.guid, DestinationKind::To, &self.to))
           (render_track_list(self.guid, DestinationKind::To, &self.to))
+          input name="to-done" type="checkbox" checked=[bool_to_option(self.to.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'to-done':this.checked}";
         }
         td {
           textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
