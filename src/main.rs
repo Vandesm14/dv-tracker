@@ -223,11 +223,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .route(
       "/style.css",
       get(async || {
-        if let Ok(css) = sass_rs::compile_file(
-          "./public/style.scss",
-          sass_rs::Options::default(),
+        if let Ok(css) = rsass::compile_scss_path(
+          "./public/style.scss".as_ref(),
+          rsass::output::Format {
+            style: rsass::output::Style::Compressed,
+            ..Default::default()
+          },
         ) {
-          ([(header::CONTENT_TYPE, "text/css")], css)
+          (
+            [(header::CONTENT_TYPE, "text/css")],
+            String::from_utf8(css).unwrap(),
+          )
         } else {
           (
             [(header::CONTENT_TYPE, "text/css")],
