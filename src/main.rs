@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use axum::{
   Form, Router,
   extract::{Path, State},
+  http::header,
   response::Html,
   routing::{delete, get, post, put},
 };
@@ -200,6 +201,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           }
         } else {
           Html::from("Failed to read index.html.".to_string())
+        }
+      }),
+    )
+    .route(
+      "/style.css",
+      get(async || {
+        if let Ok(css) = sass_rs::compile_file(
+          "./public/style.scss",
+          sass_rs::Options::default(),
+        ) {
+          ([(header::CONTENT_TYPE, "text/css")], css)
+        } else {
+          (
+            [(header::CONTENT_TYPE, "text/css")],
+            "/* Failed to compile style.scss. */".to_string(),
+          )
         }
       }),
     )

@@ -207,16 +207,16 @@ impl Order {
     html!(
       tr {
         form {
-          td {
+          td class={"id " (self.kind)} {
             (render_kind_list(self.guid, self.kind))
             (render_id_input(self.guid, self.id))
           }
-          td {
+          td class={"dest " (self.from.station)} {
             (render_station_list(self.guid, DestinationKind::From, stations, &self.from))
             (render_yard_list(self.guid, DestinationKind::From, stations, &self.from))
             (render_track_list(self.guid, DestinationKind::From, stations, &self.from))
           }
-          td {
+          td class={"dest " (self.to.station)} {
             (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
             (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
             (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
