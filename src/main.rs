@@ -12,7 +12,7 @@ use internment::Intern;
 use serde::Deserialize;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
-use dv_tracker::{Order, Station, STATIONS};
+use dv_tracker::{Order, STATIONS, Station};
 
 /// DV Tracker Server
 #[derive(Parser, Debug)]
@@ -206,15 +206,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       get(async |State(state): State<AppState>| {
         if let Ok(html) = std::fs::read_to_string("./public/index.html") {
           if let Ok(store) = state.store.try_lock() {
-            Html::from(html.replace(
-              "{{orders}}",
-              render_orders(store.orders(), STATIONS.as_ref()).as_str(),
-            ))
+            (
+              [(header::CACHE_CONTROL, "no-store")],
+              Html::from(html.replace(
+                "{{orders}}",
+                render_orders(store.orders(), STATIONS.as_ref()).as_str(),
+              )),
+            )
           } else {
-            Html::from("Failed to lock orders.".to_string())
+            (
+              [(header::CACHE_CONTROL, "no-store")],
+              Html::from("Failed to lock orders.".to_string()),
+            )
           }
         } else {
-          Html::from("Failed to read index.html.".to_string())
+          (
+            [(header::CACHE_CONTROL, "no-store")],
+            Html::from("Failed to read index.html.".to_string()),
+          )
         }
       }),
     )
