@@ -235,6 +235,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
               }
             },
           ),
+        )
+        .route(
+          "/orders",
+          get(async |State(state): State<AppState>| {
+            if let Ok(store) = state.store.try_lock() {
+              Html::from(render_orders(store.orders()))
+            } else {
+              Html::from("Failed to lock orders.".to_string())
+            }
+          }),
         ),
     )
     .route(
