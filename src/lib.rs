@@ -221,7 +221,15 @@ impl Order {
             (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
             (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
           }
-          td { button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"} }
+          td {
+            button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
+            button hx-post={"/api/order/" (self.guid) "/move/up"} hx-target="#orders" hx-trigger="click" {
+              {"↑"}
+            }
+            button hx-post={"/api/order/" (self.guid) "/move/down"} hx-target="#orders" hx-trigger="click" {
+              {"↓"}
+            }
+          }
         }
       }
     )

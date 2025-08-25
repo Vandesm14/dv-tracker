@@ -4,7 +4,7 @@ use axum::{
   Form, Router,
   extract::{Path, State},
   response::Html,
-  routing::{delete, get, put},
+  routing::{delete, get, post, put},
 };
 use internment::Intern;
 use serde::Deserialize;
@@ -143,6 +143,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
 
                   order.make_valid(&state.stations);
+                }
+
+                Html::from(render_orders(store.orders(), &state.stations))
+              } else {
+                Html::from("Failed to lock orders.".to_string())
+              }
+            },
+          ),
+        )
+        .route(
+          "/order/:guid/move/:direction",
+          post(
+            async |State(state): State<AppState>,
+                   Path((guid, direction)): Path<(usize, String)>| {
+              if let Ok(mut store) = state.store.try_lock() {
+                if let Some(pos) =
+                  store.orders.iter().position(|o| o.guid == guid)
+                {
+                  match direction.as_str() {
+                    "up" => {
+                      if pos > 0 {
+                        let item = store.orders.remove(pos);
+                        store.orders.insert(pos - 1, item);
+                      }
+                    }
+                    "down" => {
+                      if pos + 1 < store.orders.len() {
+                        let item = store.orders.remove(pos);
+                        store.orders.insert(pos + 1, item);
+                      }
+                    }
+                    _ => {}
+                  }
                 }
 
                 Html::from(render_orders(store.orders(), &state.stations))
