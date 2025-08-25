@@ -46,12 +46,8 @@ impl std::fmt::Display for DestinationKind {
 fn render_kind_list(guid: usize, kind: Intern<String>) -> Markup {
   html!(
     select name="kind" hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for k in ["FH", "LH", "SU"] {
-        @if Intern::from_ref(k) == kind {
-          option value=(k) selected { (k) }
-        } @else {
-          option value=(k) { (k) }
-        }
+      @for k in ["FH", "LH", "SL", "SU"] {
+        option value=(k) selected=[bool_to_option(Intern::from_ref(k) == kind)] { (k) }
       }
     }
   )
