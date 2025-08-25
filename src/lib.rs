@@ -66,12 +66,11 @@ fn render_id_input(guid: usize, id: u8) -> Markup {
 fn render_station_list(
   guid: usize,
   destination_kind: DestinationKind,
-  stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
     select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for s in stations {
+      @for s in STATIONS.iter() {
         @if s.short == from.station {
           option value=(s.short) selected { (s.short) }
         } @else {
@@ -85,12 +84,11 @@ fn render_station_list(
 fn render_yard_list(
   guid: usize,
   destination_kind: DestinationKind,
-  stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
     select name={(destination_kind.to_string()) "-yard"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for y in stations.iter().find(|s| s.short == from.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
+      @for y in STATIONS.iter().find(|s| s.short == from.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
         @if *y == from.yard {
           option value=(y) selected { (y) }
         } @else {
@@ -104,12 +102,11 @@ fn render_yard_list(
 fn render_track_list(
   guid: usize,
   destination_kind: DestinationKind,
-  stations: &[Station],
   from: &Destination,
 ) -> Markup {
   html!(
     select name={(destination_kind.to_string()) "-track"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for t in stations.iter().find(|s| s.short == from.station).and_then(|s| s.tracks.get(&from.yard)).unwrap_or(&vec![]).iter() {
+      @for t in STATIONS.iter().find(|s| s.short == from.station).and_then(|s| s.tracks.get(&from.yard)).unwrap_or(&vec![]).iter() {
         @if *t == from.track {
           option value=(t) selected { (t) }
         } @else {
@@ -146,8 +143,8 @@ impl Destination {
     }
   }
 
-  pub fn make_valid(&mut self, stations: &[Station]) {
-    if let Some(station) = stations.iter().find(|s| s.short == self.station) {
+  pub fn make_valid(&mut self) {
+    if let Some(station) = STATIONS.iter().find(|s| s.short == self.station) {
       if let Some(yard) = station.tracks.get(&self.yard) {
         if !yard.contains(&self.track) {
           self.track = *yard.first().unwrap();
@@ -157,7 +154,7 @@ impl Destination {
         self.track = *station.tracks.get(&self.yard).unwrap().first().unwrap();
       }
     } else {
-      let first = stations.first().unwrap();
+      let first = STATIONS.first().unwrap();
       self.station = first.short;
       self.yard = *first.tracks.keys().sorted().next().unwrap();
       self.track = *first.tracks.get(&self.yard).unwrap().first().unwrap();
@@ -193,7 +190,7 @@ impl Default for Order {
 }
 
 impl Order {
-  pub fn render(&self, stations: &[Station]) -> Markup {
+  pub fn render(&self) -> Markup {
     html!(
       tr {
         td class={"id " (self.kind)} {
@@ -201,14 +198,14 @@ impl Order {
           (render_id_input(self.guid, self.id))
         }
         td class={"dest " (self.from.station)} {
-          (render_station_list(self.guid, DestinationKind::From, stations, &self.from))
-          (render_yard_list(self.guid, DestinationKind::From, stations, &self.from))
-          (render_track_list(self.guid, DestinationKind::From, stations, &self.from))
+          (render_station_list(self.guid, DestinationKind::From, &self.from))
+          (render_yard_list(self.guid, DestinationKind::From, &self.from))
+          (render_track_list(self.guid, DestinationKind::From, &self.from))
         }
         td class={"dest " (self.to.station)} {
-          (render_station_list(self.guid, DestinationKind::To, stations, &self.to))
-          (render_yard_list(self.guid, DestinationKind::To, stations, &self.to))
-          (render_track_list(self.guid, DestinationKind::To, stations, &self.to))
+          (render_station_list(self.guid, DestinationKind::To, &self.to))
+          (render_yard_list(self.guid, DestinationKind::To, &self.to))
+          (render_track_list(self.guid, DestinationKind::To, &self.to))
         }
         td {
           textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
@@ -232,9 +229,9 @@ impl Order {
     )
   }
 
-  pub fn make_valid(&mut self, stations: &[Station]) {
-    self.from.make_valid(stations);
-    self.to.make_valid(stations);
+  pub fn make_valid(&mut self) {
+    self.from.make_valid();
+    self.to.make_valid();
   }
 }
 
