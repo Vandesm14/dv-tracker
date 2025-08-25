@@ -234,6 +234,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
+name = "dv-tracker"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap",
+ "internment",
+ "itertools",
+ "maud",
+ "sass-rs",
+ "serde",
+ "tokio",
+ "tower 0.5.2",
+ "tower-http",
+]
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -766,22 +782,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap",
- "internment",
- "itertools",
- "maud",
- "sass-rs",
- "serde",
- "tokio",
- "tower 0.5.2",
- "tower-http",
 ]
 
 [[package]]

@@ -10,20 +10,21 @@ use axum::{
 use clap::Parser;
 use internment::Intern;
 use serde::Deserialize;
-use server::{Order, Station, get_stations};
 use tower_http::{cors::CorsLayer, services::ServeDir};
+
+use dv_tracker::{Order, Station, get_stations};
 
 /// DV Tracker Server
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Host address to bind to
-    #[arg(long, default_value = "127.0.0.1")]
-    host: String,
+  /// Host address to bind to
+  #[arg(long, default_value = "127.0.0.1")]
+  host: String,
 
-    /// Port to bind to
-    #[arg(short, long, default_value_t = 3000)]
-    port: u16,
+  /// Port to bind to
+  #[arg(short, long, default_value_t = 3000)]
+  port: u16,
 }
 
 #[derive(Debug, Deserialize)]
