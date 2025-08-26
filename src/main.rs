@@ -102,10 +102,25 @@ impl OrderStore {
     }
   }
 
+  fn total_mass(&self) -> u16 {
+    self.orders.iter().map(|o| o.tonnes).sum()
+  }
+
+  fn total_length(&self) -> u16 {
+    self.orders.iter().map(|o| o.cars).sum()
+  }
+
   fn render(&self) -> Markup {
     html!(
       @for order in &self.orders {
         (order.render())
+      }
+      tr {
+        td { b { "Totals:" } }
+        td colspan="3" { b { (self.orders.len()) } }
+        td { b { (self.total_mass()) "t" } }
+        td { b { (self.total_length()) " cars" } }
+        td {}
       }
     )
   }
