@@ -47,7 +47,7 @@ fn render_kind_list(guid: usize, kind: Intern<String>) -> Markup {
   html!(
     select name="kind" hx-post={"/api/order/" (guid)} hx-target="#orders" {
       @for k in ["FH", "LH", "SL", "SU"] {
-        option value=(k) selected=[bool_to_option(Intern::from_ref(k) == kind)] { (k) }
+        option value=(k) selected[Intern::from_ref(k) == kind] { (k) }
       }
     }
   )
@@ -67,11 +67,7 @@ fn render_station_list(
   html!(
     select name={(destination_kind.to_string()) "-station"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
       @for s in STATIONS.iter() {
-        @if s.short == from.station {
-          option value=(s.short) selected { (s.short) }
-        } @else {
-          option value=(s.short) { (s.short) }
-        }
+        option value=(s.short) selected[*s.short == *from.station] { (s.short) }
       }
     }
   )
@@ -80,16 +76,12 @@ fn render_station_list(
 fn render_yard_list(
   guid: usize,
   destination_kind: DestinationKind,
-  from: &Destination,
+  dest: &Destination,
 ) -> Markup {
   html!(
     select name={(destination_kind.to_string()) "-yard"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for y in STATIONS.iter().find(|s| s.short == from.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
-        @if *y == from.yard {
-          option value=(y) selected { (y) }
-        } @else {
-          option value=(y) { (y) }
-        }
+      @for y in STATIONS.iter().find(|s| s.short == dest.station).map(|s| s.tracks.keys().sorted()).unwrap_or_default() {
+        option value=(y) selected[*y == dest.yard] { (y) }
       }
     }
   )
@@ -98,16 +90,12 @@ fn render_yard_list(
 fn render_track_list(
   guid: usize,
   destination_kind: DestinationKind,
-  from: &Destination,
+  dest: &Destination,
 ) -> Markup {
   html!(
     select name={(destination_kind.to_string()) "-track"} hx-post={"/api/order/" (guid)} hx-target="#orders" {
-      @for t in STATIONS.iter().find(|s| s.short == from.station).and_then(|s| s.tracks.get(&from.yard)).unwrap_or(&vec![]).iter() {
-        @if *t == from.track {
-          option value=(t) selected { (t) }
-        } @else {
-          option value=(t) { (t) }
-        }
+      @for t in STATIONS.iter().find(|s| s.short == dest.station).and_then(|s| s.tracks.get(&dest.yard)).unwrap_or(&vec![]).iter() {
+        option value=(t) selected[*t == dest.track] { (t) }
       }
     }
   )
@@ -152,13 +140,6 @@ impl Destination {
   }
 }
 
-fn bool_to_option(b: bool) -> Option<bool> {
-  match b {
-    true => Some(true),
-    false => None,
-  }
-}
-
 #[derive(Debug, Clone)]
 pub struct Order {
   pub guid: usize,
@@ -200,7 +181,7 @@ impl Order {
             (render_station_list(self.guid, DestinationKind::From, &self.from))
             (render_yard_list(self.guid, DestinationKind::From, &self.from))
             (render_track_list(self.guid, DestinationKind::From, &self.from))
-            input name="from-done" type="checkbox" checked=[bool_to_option(self.from.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'from-done':this.checked}";
+            input name="from-done" type="checkbox" checked[self.from.done] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'from-done':this.checked}";
           }
         }
         td .dest .completed[self.to.done] {
@@ -209,7 +190,7 @@ impl Order {
             (render_station_list(self.guid, DestinationKind::To, &self.to))
             (render_yard_list(self.guid, DestinationKind::To, &self.to))
             (render_track_list(self.guid, DestinationKind::To, &self.to))
-            input name="to-done" type="checkbox" checked=[bool_to_option(self.to.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'to-done':this.checked}";
+            input name="to-done" type="checkbox" checked[self.to.done] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'to-done':this.checked}";
           }
         }
         td {
