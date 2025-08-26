@@ -13,7 +13,7 @@ use internment::Intern;
 use maud::{Markup, html};
 use serde::Deserialize;
 use tokio::net::TcpListener;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 
 use dv_tracker::Order;
 
@@ -139,7 +139,21 @@ impl AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  tracing_subscriber::fmt::fmt()
+    .with_env_filter(
+      tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(
+        |_| {
+          #[cfg(debug_assertions)]
+          return concat!(env!("CARGO_CRATE_NAME"), "=", "trace").into();
+          #[cfg(not(debug_assertions))]
+          return concat!(env!("CARGO_CRATE_NAME"), "=", "info").into();
+        },
+      ),
+    )
+    .init();
+
   let args = Args::parse();
+
   let app = Router::new()
     .nest(
       "/api",
@@ -331,13 +345,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .layer(CorsLayer::permissive())
     .fallback_service(ServeDir::new("./public"))
+    .layer(TraceLayer::new_for_http())
     .with_state(AppState::new());
-
-  println!("Listening on:");
-
-  for address in args.address.iter() {
-    println!("    - http://{address}");
-  }
 
   let listener = TcpListener::bind(args.address.as_slice()).await?;
   axum::serve(listener, app).await?;
