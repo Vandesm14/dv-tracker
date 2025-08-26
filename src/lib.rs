@@ -113,7 +113,7 @@ fn render_track_list(
   )
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Destination {
   pub station: Intern<String>,
   pub yard: Intern<String>,
@@ -159,7 +159,7 @@ fn bool_to_option(b: bool) -> Option<bool> {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Order {
   pub guid: usize,
   pub id: u8,
@@ -194,17 +194,23 @@ impl Order {
           (render_kind_list(self.guid, self.kind))
           (render_id_input(self.guid, self.id))
         }
-        td class={"dest " (self.from.station)} {
-          (render_station_list(self.guid, DestinationKind::From, &self.from))
-          (render_yard_list(self.guid, DestinationKind::From, &self.from))
-          (render_track_list(self.guid, DestinationKind::From, &self.from))
-          input name="from-done" type="checkbox" checked=[bool_to_option(self.from.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'from-done':this.checked}";
+        td .dest .completed[self.from.done]  {
+          div.bg.(self.from.station) {}
+          div.content {
+            (render_station_list(self.guid, DestinationKind::From, &self.from))
+            (render_yard_list(self.guid, DestinationKind::From, &self.from))
+            (render_track_list(self.guid, DestinationKind::From, &self.from))
+            input name="from-done" type="checkbox" checked=[bool_to_option(self.from.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'from-done':this.checked}";
+          }
         }
-        td class={"dest " (self.to.station)} {
-          (render_station_list(self.guid, DestinationKind::To, &self.to))
-          (render_yard_list(self.guid, DestinationKind::To, &self.to))
-          (render_track_list(self.guid, DestinationKind::To, &self.to))
-          input name="to-done" type="checkbox" checked=[bool_to_option(self.to.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'to-done':this.checked}";
+        td .dest .completed[self.to.done] {
+          div.bg.(self.to.station) {}
+          div.content {
+            (render_station_list(self.guid, DestinationKind::To, &self.to))
+            (render_yard_list(self.guid, DestinationKind::To, &self.to))
+            (render_track_list(self.guid, DestinationKind::To, &self.to))
+            input name="to-done" type="checkbox" checked=[bool_to_option(self.to.done)] hx-post={"/api/order/" (self.guid)} hx-target="#orders" hx-vals="js:{'to-done':this.checked}";
+          }
         }
         td {
           textarea name="notes" hx-post={"/api/order/" (self.guid)} hx-target="#orders" { (self.notes.as_str()) }
@@ -222,6 +228,9 @@ impl Order {
           }
           button hx-post={"/api/order/" (self.guid) "/move/down"} hx-target="#orders" hx-trigger="click" {
             {"↓"}
+          }
+          button hx-post={"/api/order/" (self.guid) "/duplicate"} hx-target="#orders" hx-trigger="click" {
+            {"Dupe"}
           }
         }
       }

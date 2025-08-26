@@ -91,6 +91,17 @@ impl OrderStore {
     self.orders.iter_mut().find(|o| o.guid == guid)
   }
 
+  fn duplicate(&mut self, guid: usize) {
+    if let Some(order) = self.orders.iter().find(|o| o.guid == guid) {
+      let index = self.orders.iter().position(|o| o.guid == guid).unwrap();
+      let mut new_order = order.clone();
+      new_order.guid = self.idx;
+
+      self.orders.insert(index + 1, new_order);
+      self.idx += 1;
+    }
+  }
+
   fn render(&self) -> Markup {
     html!(
       @for order in &self.orders {
@@ -193,6 +204,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   order.make_valid();
                 }
 
+                Html::from(store.render().into_string())
+              } else {
+                Html::from("Failed to lock orders.".to_string())
+              }
+            },
+          ),
+        )
+        .route(
+          "/order/:guid/duplicate",
+          post(
+            async |State(state): State<AppState>, Path(guid): Path<usize>| {
+              if let Ok(mut store) = state.store.try_lock() {
+                store.duplicate(guid);
                 Html::from(store.render().into_string())
               } else {
                 Html::from("Failed to lock orders.".to_string())

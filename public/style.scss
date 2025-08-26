@@ -45,65 +45,80 @@ tr {
     }
 
     &.dest {
-      &.CME {
-        background-color: #686868;
+      position: relative;
+
+      .bg {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+
+        &.CME {
+          background-color: #686868;
+        }
+        &.CMS {
+          background-color: #4d544d;
+        }
+        &.CP {
+          background-color: #583c3b;
+        }
+        &.CS {
+          background-color: #98adc2;
+        }
+        &.CW {
+          background-color: #a6a6a6;
+        }
+        &.FF {
+          background-color: #77a5e1;
+        }
+        &.FM {
+          background-color: #dea94d;
+        }
+        &.FRC {
+          background-color: #90b568;
+        }
+        &.FRS {
+          background-color: #5f915e;
+        }
+        &.GF {
+          background-color: #c87ea1;
+        }
+        &.HB {
+          background-color: #806b92;
+        }
+        &.IME {
+          background-color: #b66963;
+        }
+        &.IMW {
+          background-color: #995846;
+        }
+        &.MB {
+          background-color: #988b5e;
+        }
+        &.MF {
+          background-color: #db8759;
+        }
+        &.OR {
+          background-color: #945477;
+        }
+        &.OWC {
+          background-color: #545861;
+        }
+        &.OWN {
+          background-color: #615d54;
+        }
+        &.SM {
+          background-color: #7b8294;
+        }
+        &.SW {
+          background-color: #cba787;
+        }
       }
-      &.CMS {
-        background-color: #4d544d;
-      }
-      &.CP {
-        background-color: #583c3b;
-      }
-      &.CS {
-        background-color: #98adc2;
-      }
-      &.CW {
-        background-color: #a6a6a6;
-      }
-      &.FF {
-        background-color: #77a5e1;
-      }
-      &.FM {
-        background-color: #dea94d;
-      }
-      &.FRC {
-        background-color: #90b568;
-      }
-      &.FRS {
-        background-color: #5f915e;
-      }
-      &.GF {
-        background-color: #c87ea1;
-      }
-      &.HB {
-        background-color: #806b92;
-      }
-      &.IME {
-        background-color: #b66963;
-      }
-      &.IMW {
-        background-color: #995846;
-      }
-      &.MB {
-        background-color: #988b5e;
-      }
-      &.MF {
-        background-color: #db8759;
-      }
-      &.OR {
-        background-color: #945477;
-      }
-      &.OWC {
-        background-color: #545861;
-      }
-      &.OWN {
-        background-color: #615d54;
-      }
-      &.SM {
-        background-color: #7b8294;
-      }
-      &.SW {
-        background-color: #cba787;
+
+      &.completed {
+        select,
+        .bg {
+          filter: brightness(50%);
+        }
       }
     }
 
