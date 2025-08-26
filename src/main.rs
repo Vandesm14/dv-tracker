@@ -1,3 +1,4 @@
+use core::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
 use axum::{
@@ -11,6 +12,7 @@ use clap::Parser;
 use internment::Intern;
 use maud::{Markup, html};
 use serde::Deserialize;
+use tokio::net::TcpListener;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
 use dv_tracker::Order;
@@ -20,12 +22,8 @@ use dv_tracker::Order;
 #[command(author, version, about, long_about = None)]
 struct Args {
   /// Host address to bind to
-  #[arg(long, default_value = "127.0.0.1")]
-  host: String,
-
-  /// Port to bind to
-  #[arg(short, long, default_value_t = 3000)]
-  port: u16,
+  #[arg(long, default_values = ["[::]:3000", "0.0.0.0:3000"])]
+  address: Vec<SocketAddr>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -159,7 +157,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           }),
         )
         .route(
-          "/order/:guid",
+          "/order/{guid}",
           delete(
             async |State(state): State<AppState>, Path(guid): Path<usize>| {
               if let Ok(mut store) = state.store.try_lock() {
@@ -227,7 +225,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           ),
         )
         .route(
-          "/order/:guid/duplicate",
+          "/order/{guid}/duplicate",
           post(
             async |State(state): State<AppState>, Path(guid): Path<usize>| {
               if let Ok(mut store) = state.store.try_lock() {
@@ -240,7 +238,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           ),
         )
         .route(
-          "/order/:guid/move/:direction",
+          "/order/{guid}/move/{direction}",
           post(
             async |State(state): State<AppState>,
                    Path((guid, direction)): Path<(usize, String)>| {
@@ -335,12 +333,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .fallback_service(ServeDir::new("./public"))
     .with_state(AppState::new());
 
-  let addr = format!("{}:{}", args.host, args.port);
-  println!("Starting server on http://{addr}");
+  println!("Listening on:");
 
-  axum::Server::bind(&addr.parse()?)
-    .serve(app.into_make_service())
-    .await?;
+  for address in args.address.iter() {
+    println!("    - http://{address}");
+  }
+
+  let listener = TcpListener::bind(args.address.as_slice()).await?;
+  axum::serve(listener, app).await?;
 
   Ok(())
 }
