@@ -9,6 +9,7 @@ use axum::{
 };
 use clap::Parser;
 use internment::Intern;
+use maud::{Markup, html};
 use serde::Deserialize;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
@@ -90,8 +91,12 @@ impl OrderStore {
     self.orders.iter_mut().find(|o| o.guid == guid)
   }
 
-  fn orders(&self) -> &[Order] {
-    &self.orders
+  fn render(&self) -> Markup {
+    html!(
+      @for order in &self.orders {
+        (order.render())
+      }
+    )
   }
 }
 
@@ -108,14 +113,6 @@ impl AppState {
   }
 }
 
-fn render_orders(orders: &[Order]) -> String {
-  orders
-    .iter()
-    .map(|o| o.render().into_string())
-    .reduce(|acc, s| acc + &s)
-    .unwrap_or_default()
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args = Args::parse();
@@ -129,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           put(async |State(state): State<AppState>| {
             if let Ok(mut store) = state.store.try_lock() {
               store.add(Order::default());
-              Html::from(render_orders(store.orders()))
+              Html::from(store.render().into_string())
             } else {
               Html::from("Failed to lock orders.".to_string())
             }
@@ -141,7 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             async |State(state): State<AppState>, Path(guid): Path<usize>| {
               if let Ok(mut store) = state.store.try_lock() {
                 store.remove(guid);
-                Html::from(render_orders(store.orders()))
+                Html::from(store.render().into_string())
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -196,7 +193,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   order.make_valid();
                 }
 
-                Html::from(render_orders(store.orders()))
+                Html::from(store.render().into_string())
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -229,7 +226,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
                 }
 
-                Html::from(render_orders(store.orders()))
+                Html::from(store.render().into_string())
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
@@ -240,7 +237,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
           "/orders",
           get(async |State(state): State<AppState>| {
             if let Ok(store) = state.store.try_lock() {
-              Html::from(render_orders(store.orders()))
+              Html::from(store.render().into_string())
             } else {
               Html::from("Failed to lock orders.".to_string())
             }
@@ -255,10 +252,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             (
               [(header::CACHE_CONTROL, "no-store")],
               Html::from(
-                html.replace(
-                  "{{orders}}",
-                  render_orders(store.orders()).as_str(),
-                ),
+                html
+                  .replace("{{orders}}", store.render().into_string().as_str()),
               ),
             )
           } else {
