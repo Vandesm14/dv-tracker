@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -25,6 +25,12 @@
     </table>
     <button hx-put="/api/order" hx-target="#orders">Add</button>
     <button hx-get="/api/orders" hx-target="#orders">Refresh</button>
+    <br />
+    <br />
+    <form hx-put="/api/parse-order" hx-target="#orders">
+      <input name="order" placeholder="FH01 SM B1 SW A1 600 6" />
+      <button type="submit">Parse</button>
+    </form>
     <script src="/htmx.min.js"></script>
   </body>
 </html>

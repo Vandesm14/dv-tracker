@@ -121,6 +121,23 @@ impl Default for Destination {
 }
 
 impl Destination {
+  /// Parse from station and yard/track strings. Example: `"SM"`, `"B1"`
+  pub fn parse(station: &str, yard_track: &str) -> Result<Self, String> {
+    let yard = yard_track.get(0..1).ok_or("missing yard")?;
+    let track = yard_track
+      .get(1..)
+      .ok_or("missing track")?
+      .parse::<u8>()
+      .map_err(|_| "invalid track number")?;
+
+    Ok(Self {
+      station: Intern::from_ref(station),
+      yard: Intern::from_ref(yard),
+      track,
+      ..Default::default()
+    })
+  }
+
   pub fn make_valid(&mut self) {
     if let Some(station) = STATIONS.iter().find(|s| s.short == self.station) {
       if let Some(yard) = station.tracks.get(&self.yard) {
@@ -168,6 +185,46 @@ impl Default for Order {
 }
 
 impl Order {
+  /// From an order string. Example: `FH01 SM B1 SW A1`
+  pub fn parse(str: String) -> Result<Self, String> {
+    let parts: Vec<_> = str.split(' ').collect();
+
+    let kind = str.get(0..2).ok_or("missing order kind")?;
+    let id = str
+      .get(2..4)
+      .ok_or("missing order id")?
+      .parse::<u8>()
+      .map_err(|_| "invalid order id")?;
+
+    let from_station = *parts.get(1).ok_or("from: missing station")?;
+    let from_yard_track = *parts.get(2).ok_or("from: missing yard/track")?;
+    let to_station = *parts.get(3).ok_or("to: missing station")?;
+    let to_yard_track = *parts.get(4).ok_or("to: missing yard/track")?;
+
+    let tonnes = parts
+      .get(5)
+      .unwrap_or(&"0")
+      .parse::<u16>()
+      .map_err(|_| "invalid tonnes")?;
+    let cars = parts
+      .get(6)
+      .unwrap_or(&"0")
+      .parse::<u16>()
+      .map_err(|_| "invalid cars")?;
+
+    Ok(Self {
+      kind: Intern::from_ref(kind),
+      id,
+      from: Destination::parse(from_station, from_yard_track)
+        .map_err(|e| format!("from: {e}"))?,
+      to: Destination::parse(to_station, to_yard_track)
+        .map_err(|e| format!("to: {e}"))?,
+      tonnes,
+      cars,
+      ..Default::default()
+    })
+  }
+
   pub fn render(&self) -> Markup {
     html!(
       tr {

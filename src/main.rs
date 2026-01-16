@@ -60,6 +60,12 @@ struct OrderRequest {
   cars: Option<u16>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct ManualOrderRequest {
+  order: String,
+}
+
 struct OrderStore {
   idx: usize,
   orders: Vec<Order>,
@@ -278,6 +284,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 Html::from(store.render().into_string())
+              } else {
+                Html::from("Failed to lock orders.".to_string())
+              }
+            },
+          ),
+        )
+        .route(
+          "/parse-order",
+          put(
+            async |State(state): State<AppState>,
+                   Form(req): Form<ManualOrderRequest>| {
+              if let Ok(mut store) = state.store.try_lock() {
+                if let Ok(result) = Order::parse(req.order) {
+                  store.add(result);
+                  Html::from(store.render().into_string())
+                } else {
+                  Html::from("Failed to parse order.".to_string())
+                }
               } else {
                 Html::from("Failed to lock orders.".to_string())
               }
