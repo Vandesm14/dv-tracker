@@ -58,6 +58,7 @@ struct OrderRequest {
   notes: Option<String>,
   tonnes: Option<u16>,
   cars: Option<u16>,
+  profit: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -114,6 +115,10 @@ impl OrderStore {
     self.orders.iter().map(|o| o.cars).sum()
   }
 
+  fn total_profit(&self) -> u32 {
+    self.orders.iter().map(|o| o.profit).sum()
+  }
+
   fn render(&self) -> Markup {
     html!(
       @for order in &self.orders {
@@ -124,6 +129,7 @@ impl OrderStore {
         td colspan="3" { b { (self.orders.len()) } }
         td { b { (self.total_mass()) "t" } }
         td { b { (self.total_length()) " cars" } }
+        td { b { "$" (self.total_profit()) } }
         td {}
       }
     )
@@ -232,6 +238,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                   }
                   if let Some(cars) = req.cars {
                     order.cars = cars;
+                  }
+                  if let Some(profit) = req.profit {
+                    order.profit = profit;
                   }
 
                   order.make_valid();

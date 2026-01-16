@@ -167,6 +167,7 @@ pub struct Order {
   pub notes: String,
   pub tonnes: u16,
   pub cars: u16,
+  pub profit: u32,
 }
 
 impl Default for Order {
@@ -180,6 +181,7 @@ impl Default for Order {
       notes: Default::default(),
       tonnes: Default::default(),
       cars: Default::default(),
+      profit: Default::default(),
     }
   }
 }
@@ -258,6 +260,9 @@ impl Order {
         }
         td {
           input name="cars" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.cars) min="0";
+        }
+        td {
+          input name="profit" type="number" hx-post={"/api/order/" (self.guid)} hx-target="#orders" value=(self.profit) min="0";
         }
         td {
           button hx-delete={"/api/order/" (self.guid)} hx-target="#orders" hx-trigger="click" hx-confirm="Sure?" {"x"}
