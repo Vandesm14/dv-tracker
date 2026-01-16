@@ -1,6 +1,6 @@
 # Derail Valley Order Tracker
 
-A web app powered by Rust and HTMX to aid in keeping track of orders in Derail Valley.
+A web app powered by Rust and HTMX to aid in keeping track of orders in [Derail Valley](https://www.derailvalley.com/) (DV).
 
 ![The app](./image.png)
 
