@@ -187,6 +187,7 @@ impl Default for Order {
 impl Order {
   /// From an order string. Example: `FH01 SM B1 SW A1`
   pub fn parse(str: String) -> Result<Self, String> {
+    let str = str.to_uppercase();
     let parts: Vec<_> = str.split(' ').collect();
 
     let kind = str.get(0..2).ok_or("missing order kind")?;
