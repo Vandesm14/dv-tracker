@@ -46,5 +46,3 @@ Examples:
 - `LH02 CM A1 CS B1 400 4`
 - `SL03 FM A1 HB B1 200`
 - `SU04 FF A1 CME B1`
-
-_Note: The syntax is **very** strict, so make sure to follow it exactly._
