@@ -27,11 +27,8 @@ Then, open your browser to `http://localhost:3000` to view the app.
 ### Usage
 
 1. Add orders by clicking the "Add" button.
-
 2. Move and duplicate orders by using the options on the right of each order.
-
 3. Check off loads and unloads by clicking the checkbox on the right of each location (From and To).
-
 4. Enter orders manually by entering the order string into the input field and clicking the "Parse" button.
 
 ### Order Format (Manual Entry)
