@@ -296,11 +296,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             async |State(state): State<AppState>,
                    Form(req): Form<ManualOrderRequest>| {
               if let Ok(mut store) = state.store.try_lock() {
-                if let Ok(result) = Order::parse(req.order) {
-                  store.add(result);
-                  Html::from(store.render().into_string())
-                } else {
-                  Html::from("Failed to parse order.".to_string())
+                match Order::parse(req.order) {
+                  Ok(result) => {
+                    store.add(result);
+                    Html::from(store.render().into_string())
+                  }
+                  Err(err) => {
+                    Html::from(format!("Failed to parse order: {err}."))
+                  }
                 }
               } else {
                 Html::from("Failed to lock orders.".to_string())
